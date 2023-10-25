@@ -2,6 +2,7 @@
 // https://www.raylib.com/cheatsheet/cheatsheet.html
 // https://kremlin.cc/k&r.pdf
 // https://codepoints.net/search?blk=Cyrillic
+// https://github.com/philj56/fuzzy-match
 // https://github.com/anyascii/anyascii
 
 #include <stdlib.h>
