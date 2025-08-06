@@ -48,10 +48,17 @@ file(GLOB_RECURSE PROJECT_HEADERS src/*.h src/*.hpp)
 
 include_directories(src)
 
+# Add resource file for icon (Windows only)
+if (WIN32)
+    enable_language(RC)
+    set(WIN_ICON resources/resources.rc)
+endif()
+
 add_executable(base_runner
         ${PROJECT_SOURCES}
         ${PROJECT_HEADERS}
         ${IMGUI_SOURCES}
+        ${WIN_ICON}
 )
 
 if(WIN32)
