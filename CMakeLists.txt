@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.0)
-project(base_runner LANGUAGES CXX)
+project(base_runner VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,6 +8,27 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
     add_compile_options("/utf-8")
 endif()
+
+# === version.h ===
+
+# Get git commit hash
+execute_process(
+        COMMAND git rev-parse --short HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get build datetime
+string(TIMESTAMP BUILD_DATETIME "%Y-%m-%d %H:%M:%S")
+
+configure_file(
+        ${CMAKE_SOURCE_DIR}/version.h.in
+        ${CMAKE_BINARY_DIR}/generated/version.h
+        @ONLY
+)
+
+include_directories(${CMAKE_BINARY_DIR}/generated)
 
 # === SDL2 ===
 set(SDL2_DIR vendor/SDL2-2.32.8)
