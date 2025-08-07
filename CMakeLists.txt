@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 4.0)
-project(base_runner VERSION 0.1.0 LANGUAGES CXX)
+project(BaseRunner VERSION 0.1.0 LANGUAGES CXX)
+
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/dist" CACHE PATH "Install path prefix." FORCE)
+endif()
 
 # Force UTF-8 on MSVC
 if(MSVC)
@@ -11,24 +17,26 @@ endif()
 
 # === version.h ===
 
-# Get git commit hash
-execute_process(
-        COMMAND git rev-parse --short HEAD
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_COMMIT_HASH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
+set(VERSION_TEMPLATE "${CMAKE_SOURCE_DIR}/src/version.h.in")
+set(VERSION_HEADER "${CMAKE_BINARY_DIR}/generated/version.h")
+set(GENERATE_SCRIPT "${CMAKE_SOURCE_DIR}/tools/generate_version.py")
+
+add_custom_command(
+        OUTPUT "${VERSION_HEADER}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/generated"
+        COMMAND ${CMAKE_COMMAND} -E env PYTHONIOENCODING=utf-8
+        ${Python3_EXECUTABLE} "${GENERATE_SCRIPT}"
+        "${VERSION_TEMPLATE}"
+        "${VERSION_HEADER}"
+        "${PROJECT_NAME}"
+        "${PROJECT_VERSION}"
+        DEPENDS "${VERSION_TEMPLATE}" "${GENERATE_SCRIPT}"
+        COMMENT "Generating version.h"
 )
 
-# Get build datetime
-string(TIMESTAMP BUILD_DATETIME "%Y-%m-%d %H:%M:%S")
+add_custom_target(GenerateVersionHeader ALL DEPENDS "${VERSION_HEADER}")
 
-configure_file(
-        ${CMAKE_SOURCE_DIR}/version.h.in
-        ${CMAKE_BINARY_DIR}/generated/version.h
-        @ONLY
-)
-
-include_directories(${CMAKE_BINARY_DIR}/generated)
+include_directories("${CMAKE_BINARY_DIR}/generated")
 
 # === SDL2 ===
 set(SDL2_DIR vendor/SDL2-2.32.8)
@@ -63,7 +71,7 @@ include_directories(
         ${PLOG_DIR}/include
 )
 
-# === Project ===
+# === Project build ===
 file(GLOB_RECURSE PROJECT_SOURCES src/*.cpp)
 file(GLOB_RECURSE PROJECT_HEADERS src/*.h src/*.hpp)
 
@@ -75,25 +83,27 @@ if (WIN32)
     set(WIN_ICON resources/resources.rc)
 endif()
 
-add_executable(base_runner
+add_executable(BaseRunner
         ${PROJECT_SOURCES}
         ${PROJECT_HEADERS}
         ${IMGUI_SOURCES}
         ${WIN_ICON}
 )
 
+add_dependencies(BaseRunner GenerateVersionHeader)
+
 if(WIN32)
-    target_link_libraries(base_runner
+    target_link_libraries(BaseRunner
             SDL2 SDL2main
             opengl32
             freetype
     )
 
     # Copy SDL2.dll after build
-    add_custom_command(TARGET base_runner POST_BUILD
+    add_custom_command(TARGET BaseRunner POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${CMAKE_SOURCE_DIR}/${SDL2_DIR}/lib/x64/SDL2.dll
-            $<TARGET_FILE_DIR:base_runner>)
+            $<TARGET_FILE_DIR:BaseRunner>)
 
     # === Assets (copy to binary dir) ===
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -104,3 +114,11 @@ if(WIN32)
 else()
     message(FATAL_ERROR "Only Windows with prebuilt SDL2 is supported in this setup")
 endif()
+
+# === Project install ===
+
+set(DESTINATION_PATH "${PROJECT_NAME}-${PROJECT_VERSION}")
+
+install(TARGETS BaseRunner DESTINATION ${DESTINATION_PATH}/bin)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/assets/ DESTINATION ${DESTINATION_PATH}/bin)
+install(FILES ${CMAKE_SOURCE_DIR}/${SDL2_DIR}/lib/x64/SDL2.dll DESTINATION ${DESTINATION_PATH}/bin)
