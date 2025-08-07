@@ -71,6 +71,10 @@ include_directories(
         ${PLOG_DIR}/include
 )
 
+# === rapidfuzz-cpp ===
+set(RAPIDFUZZ_DIR vendor/rapidfuzz-cpp)
+add_subdirectory(${RAPIDFUZZ_DIR})
+
 # === Project build ===
 file(GLOB_RECURSE PROJECT_SOURCES src/*.cpp)
 file(GLOB_RECURSE PROJECT_HEADERS src/*.h src/*.hpp)
@@ -97,6 +101,7 @@ if(WIN32)
             SDL2 SDL2main
             opengl32
             freetype
+            rapidfuzz::rapidfuzz
     )
 
     # Copy SDL2.dll after build
